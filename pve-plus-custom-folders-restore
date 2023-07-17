@@ -11,7 +11,7 @@ By using this code, you acknowledge and accept all risks associated with its use
 
 #!/bin/bash
 
-# Backup destination directory
+# Backup source directory
 BACKUP_ROOT="/your-backup-folder-source-whithout-ending-slash"
 
 # Analyze the backup directory and create a list of available days
