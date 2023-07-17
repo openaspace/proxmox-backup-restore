@@ -1,4 +1,4 @@
-# proxmox-backup-restore (VM and LXC EXCLUDED!)
+# proxmox backup-restore configuration (VM and LXC EXCLUDED!)
 Simple script to backup and restore proxmox settings configuration.
 
 
