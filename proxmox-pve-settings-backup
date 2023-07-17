@@ -1,0 +1,62 @@
+#!/bin/bash
+
+# Destination directory for the backup
+BACKUP_ROOT="/your-backup-folder-including-ending-slash/"
+
+# Backup file name
+BACKUP_FILE="proxmox-prx1-pve-host"
+
+# Number of days to keep the backups
+KEEP_DAYS=7
+
+# Configuration directories to be included in the backup
+PVE_BACKUP_SET="/etc/pve/ /etc/network/interfaces /etc/resolv.conf /etc/hosts"
+PVE_CUSTOM_BACKUP_SET="/etc/samba/ /root"
+
+# Create a unique timestamp for this backup
+BACKUP_DATE=$(date +%Y_%m_%d)
+BACKUP_TIME=$(date +%H_%M_%S)
+
+# Create a specific backup directory for this date and timestamp
+BACKUP_DIR="$BACKUP_ROOT/$BACKUP_DATE/"
+mkdir -p "$BACKUP_DIR"
+BACKUP_FOLDER="$BACKUP_DIR/$BACKUP_FILE-$BACKUP_TIME"
+mkdir -p "$BACKUP_FOLDER"
+
+# Redirect stderr to a file
+exec 2> "$BACKUP_FOLDER/error.log"
+
+# Create a tar archive of the configuration directories
+BACKUP_TAR="$BACKUP_FOLDER/$BACKUP_FILE.tar.gz"
+tar -czf "$BACKUP_TAR" --absolute-names $PVE_BACKUP_SET $PVE_CUSTOM_BACKUP_SET
+
+# Create a file with the list of installed packages
+dpkg --get-selections > "$BACKUP_FOLDER/packages.list"
+
+# Save the permissions of the directories and files
+for DIR in $PVE_BACKUP_SET $PVE_CUSTOM_BACKUP_SET; do
+    getfacl -p -R "$DIR" > "$BACKUP_FOLDER/permissions.acl"
+done
+
+# Delete backup folders older than a certain number of days
+SEVEN_DAYS_AGO=$(date -d "7 days ago" +%Y_%m_%d)
+find "$BACKUP_ROOT" -type d ! -newermt "$SEVEN_DAYS_AGO" -exec rm -rf {} \;
+
+# For each day in the last 7 days, excluding today, keep only the last backup
+for DAY in {6..1}; do
+    DAY_AGO=$(date -d "$DAY days ago" +%Y_%m_%d)
+    DAY_DIR="$BACKUP_ROOT/$DAY_AGO/"
+    if [ -d "$DAY_DIR" ]; then
+        # List all backups of that day, sort in descending order and remove all but the last one
+        ls -d $DAY_DIR/* | sort -r | tail -n +2 | xargs rm -rf
+    fi
+done
+
+# Check if there was an error
+if [ -s "$BACKUP_FOLDER/error.log" ]; then
+    # Send an email with the error log
+    cat "$BACKUP_FOLDER/error.log" | msmtp -s "Backup Error" your-email-address@gmail.com
+fi
+
+# Disclaimer
+echo "This script is provided as is, without warranty of any kind. The user assumes all responsibility for the use of this script. The author of this script is not responsible for any damage or data loss that may occur from the use of this script."
