@@ -1,3 +1,14 @@
+# DISCLAIMER
+
+## WARNING: THIS SCRIPT MAY OVERWRITE EXISTING FILES AND FOLDERS IN YOUR SYSTEM. USE WITH CAUTION!
+
+This code is provided "as-is", without any implied warranty or responsibility. It is the user's sole responsibility to test the code thoroughly in a controlled environment before deploying it, and to verify its functionality, suitability, and safety. 
+
+Please be aware that this script has the potential to overwrite existing files and directories in your system, which could cause significant data loss or system malfunction. Always ensure that you have a recent and reliable backup of your system before running this script, and never run it on a production system without testing it first in a safe and isolated test environment.
+
+By using this code, you acknowledge and accept all risks associated with its use, including but not limited to data loss, system downtime, or other system disruption. You agree to assume all responsibility for any damages, losses or other consequences that may result from the use of this code.
+
+
 #!/bin/bash
 
 # Backup destination directory
@@ -80,5 +91,3 @@ if [ $? -eq 0 ]; then
 else
     echo "An error occurred during the restore process."
 fi
-
-# DISCLAIMER: The code is provided as-is, without any warranty or responsibility. It is the user's responsibility to test the code in a test environment and verify its functionality. The user assumes all risks associated with the use of the code.
