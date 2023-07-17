@@ -1,0 +1,84 @@
+#!/bin/bash
+
+# Backup destination directory
+BACKUP_ROOT="/your-backup-folder-source-whithout-ending-slash"
+
+# Analyze the backup directory and create a list of available days
+DAY_LIST=$(find "$BACKUP_ROOT" -mindepth 1 -maxdepth 1 -type d -printf "%f\n")
+
+# Display the list of available backup days with corresponding numbers
+echo "List of available backup days:"
+i=1
+while read -r BACKUP_DAY; do
+    echo "$i. $BACKUP_DAY"
+    i=$((i+1))
+done <<< "$DAY_LIST"
+
+# Ask the user to enter the number corresponding to the backup day
+read -p "Enter the number of the backup day: " DAY_NUMBER
+
+# Verify that the input is a valid number
+if [[ ! $DAY_NUMBER =~ ^[0-9]+$ ]]; then
+    echo "Invalid input. Please enter a valid number."
+    exit 1
+fi
+
+# Verify that the day number is within the range of available days
+if [[ $DAY_NUMBER -lt 1 || $DAY_NUMBER -gt $(echo "$DAY_LIST" | wc -l) ]]; then
+    echo "Invalid day number. Please select a valid number."
+    exit 1
+fi
+
+# Select the backup day corresponding to the chosen number
+SELECTED_DAY=$(echo "$DAY_LIST" | sed -n "${DAY_NUMBER}p")
+SELECTED_DAY_FOLDER="$BACKUP_ROOT/$SELECTED_DAY"
+
+# Analyze the selected backup day folder and create a list of available backups
+BACKUP_LIST=$(find "$SELECTED_DAY_FOLDER" -mindepth 1 -maxdepth 1 -type d -printf "%f\n")
+
+# Display the list of available backups for the selected day with corresponding numbers
+echo "List of available backups for day $SELECTED_DAY:"
+i=1
+while read -r BACKUP_FOLDER; do
+    echo "$i. $BACKUP_FOLDER"
+    i=$((i+1))
+done <<< "$BACKUP_LIST"
+
+# Ask the user to enter the number corresponding to the backup to restore
+read -p "Enter the number of the backup to restore: " BACKUP_NUMBER
+
+# Verify that the input is a valid number
+if [[ ! $BACKUP_NUMBER =~ ^[0-9]+$ ]]; then
+    echo "Invalid input. Please enter a valid number."
+    exit 1
+fi
+
+# Verify that the backup number is within the range of available backups
+if [[ $BACKUP_NUMBER -lt 1 || $BACKUP_NUMBER -gt $(echo "$BACKUP_LIST" | wc -l) ]]; then
+    echo "Invalid backup number. Please select a valid number."
+    exit 1
+fi
+
+# Select the backup corresponding to the chosen number
+SELECTED_BACKUP=$(echo "$BACKUP_LIST" | sed -n "${BACKUP_NUMBER}p")
+RESTORE_DIR="$SELECTED_DAY_FOLDER/$SELECTED_BACKUP"
+
+# Backup file name
+BACKUP_FILE="proxmox-prx1-pve-host"
+
+# Restore the tar archive of the configuration directories to their original location
+tar -xzf "$RESTORE_DIR/$BACKUP_FILE.tar.gz" --absolute-names -C /
+
+# Restore directory and file permissions
+for DIR in $PVE_BACKUP_SET $PVE_CUSTOM_BACKUP_SET; do
+    setfacl --restore="$RESTORE_DIR/permissions.acl" "$DIR"
+done
+
+# Check if there were any errors during the restore process
+if [ $? -eq 0 ]; then
+    echo "Restore completed successfully."
+else
+    echo "An error occurred during the restore process."
+fi
+
+# DISCLAIMER: The code is provided as-is, without any warranty or responsibility. It is the user's responsibility to test the code in a test environment and verify its functionality. The user assumes all risks associated with the use of the code.
